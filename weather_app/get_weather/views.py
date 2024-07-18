@@ -7,12 +7,23 @@ from retry_requests import retry
 def index(request):
     if request.method == 'POST':
         city = request.POST.get('city')
-        coordinates = get_city_coordinates(city)
+        try:
+            coordinates = get_city_coordinates(city)
+        except Exception as e:
+            # Обработка ошибок, связанных с получением координат города
+            print(f"Error getting city coordinates: {e}")
+            return render(request, 'index.html', {'error': 'Failed to get city coordinates'})
+
         if coordinates:
             # Setup the Open-Meteo API client with cache and retry on error
-            cache_session = requests_cache.CachedSession('.cache', expire_after=3600)
-            retry_session = retry(cache_session, retries=5, backoff_factor=0.2)
-            openmeteo = openmeteo_requests.Client(session=retry_session)
+            try:
+                cache_session = requests_cache.CachedSession('.cache', expire_after=3600)
+                retry_session = retry(cache_session, retries=5, backoff_factor=0.2)
+                openmeteo = openmeteo_requests.Client(session=retry_session)
+            except Exception as e:
+                # Обработка ошибок, связанных с настройкой сессии
+                print(f"Error setting up session: {e}")
+                return render(request, 'index.html', {'error': 'Failed to set up API client'})
 
             # Get weather data
             url = "https://api.open-meteo.com/v1/forecast"
@@ -22,13 +33,23 @@ def index(request):
                 "current": ["temperature_2m", "apparent_temperature", "wind_speed_10m", "wind_direction_10m"],
                 "forecast_days": 1
             }
-            responses = openmeteo.weather_api(url, params=params)
-            response = responses[0]
+            try:
+                responses = openmeteo.weather_api(url, params=params)
+                response = responses[0]
+            except Exception as e:
+                # Обработка ошибок, связанных с получением данных погоды
+                print(f"Error getting weather data: {e}")
+                return render(request, 'index.html', {'error': 'Failed to get weather data'})
 
             # Current values
-            current = response.Current()
-            current_temperature_2m = current.Variables(0).Value()
-            current_apparent_temperature = current.Variables(1).Value()
+            try:
+                current = response.Current()
+                current_temperature_2m = current.Variables(0).Value()
+                current_apparent_temperature = current.Variables(1).Value()
+            except Exception as e:
+                # Обработка ошибок, связанных с извлечением текущих значений
+                print(f"Error getting current weather values: {e}")
+                return render(request, 'index.html', {'error': 'Failed to get current weather values'})
 
             context = {
                 'city': city,
