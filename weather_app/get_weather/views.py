@@ -3,6 +3,7 @@ from .utils import get_city_coordinates
 import openmeteo_requests
 import requests_cache
 from retry_requests import retry
+from loguru import logger
 
 def index(request):
     if request.method == 'POST':
@@ -11,7 +12,7 @@ def index(request):
             coordinates = get_city_coordinates(city)
         except Exception as e:
             # Обработка ошибок, связанных с получением координат города
-            print(f"Error getting city coordinates: {e}")
+            logger.info(f"Error getting city coordinates: {e}")
             return render(request, 'index.html', {'error': 'Failed to get city coordinates'})
 
         if coordinates:
@@ -22,7 +23,7 @@ def index(request):
                 openmeteo = openmeteo_requests.Client(session=retry_session)
             except Exception as e:
                 # Обработка ошибок, связанных с настройкой сессии
-                print(f"Error setting up session: {e}")
+                logger.info(f"Error setting up session: {e}")
                 return render(request, 'index.html', {'error': 'Failed to set up API client'})
 
             # Get weather data
@@ -38,7 +39,7 @@ def index(request):
                 response = responses[0]
             except Exception as e:
                 # Обработка ошибок, связанных с получением данных погоды
-                print(f"Error getting weather data: {e}")
+                logger.info(f"Error getting weather data: {e}")
                 return render(request, 'index.html', {'error': 'Failed to get weather data'})
 
             # Current values
@@ -48,7 +49,7 @@ def index(request):
                 current_apparent_temperature = current.Variables(1).Value()
             except Exception as e:
                 # Обработка ошибок, связанных с извлечением текущих значений
-                print(f"Error getting current weather values: {e}")
+                logger.info(f"Error getting current weather values: {e}")
                 return render(request, 'index.html', {'error': 'Failed to get current weather values'})
 
             context = {
