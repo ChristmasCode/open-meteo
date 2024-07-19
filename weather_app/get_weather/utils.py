@@ -1,5 +1,10 @@
 import requests
 from loguru import logger
+from requests import RequestException
+
+
+class UnableToGetCityCoordinatesException(Exception):
+    pass
 
 def get_city_coordinates(city_name):
     url = f"https://nominatim.openstreetmap.org/search?q={city_name}&format=json"
@@ -14,9 +19,9 @@ def get_city_coordinates(city_name):
                 longitude = float(data[0]['lon'])
                 return {'latitude': latitude, 'longitude': longitude}
             else:
-                raise ValueError("No valid city data found")
+                raise UnableToGetCityCoordinatesException("No valid city data found")
         else:
-            raise ValueError("No city data found")
-    except (requests.exceptions.RequestException, ValueError) as e:
+            raise UnableToGetCityCoordinatesException("No city data found")
+    except RequestException as e:
         logger.error(f"Error getting city coordinates: {e}")
-        raise Exception("Failed to get city coordinates")
+        raise UnableToGetCityCoordinatesException("Failed to get city coordinates")
